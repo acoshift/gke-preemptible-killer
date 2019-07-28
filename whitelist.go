@@ -2,7 +2,6 @@ package main
 
 import (
 	"fmt"
-	"log"
 	"strings"
 	"time"
 
@@ -45,15 +44,16 @@ func (w *WhitelistInstance) getExpiryDate(t time.Time, drainTimeout time.Duratio
 	// find best range
 	var bestStart, bestEnd time.Time
 	s.IntervalsBetween(t, t.Add(24*time.Hour), func(start, end time.Time) bool {
-		bestStart = start
-		bestEnd = end
+		if start.After(bestStart) {
+			bestStart = start
+			bestEnd = end
+		}
 		return true
 	})
 
 	interval := int(bestEnd.Add(-drainTimeout).Sub(bestStart))
 	randomInterval := time.Duration(random.Intn(interval))
-	log.Println(randomInterval)
-	return t.Add(bestStart.Sub(t)).Add(randomInterval)
+	return bestStart.Add(randomInterval)
 }
 
 // mergeTimespans merges time intervals.
