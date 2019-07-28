@@ -87,9 +87,6 @@ func init() {
 	// Metrics have to be registered to be exposed:
 	prometheus.MustRegister(nodeTotals)
 
-	whitelistInstance.blacklist = *blacklist
-	whitelistInstance.whitelist = *whitelist
-
 	time.Local = time.UTC
 }
 
@@ -100,10 +97,14 @@ func main() {
 
 	kubernetes, err := NewKubernetesClient(os.Getenv("KUBERNETES_SERVICE_HOST"), os.Getenv("KUBERNETES_SERVICE_PORT"),
 		os.Getenv("KUBERNETES_NAMESPACE"), *kubeConfigPath)
-
 	if err != nil {
 		log.Fatal().Err(err).Msg("Error initializing Kubernetes client")
 	}
+
+	whitelistInstance.whitelist = *whitelist
+	whitelistInstance.blacklist = *blacklist
+	log.Info().Msgf("Whitelist", whitelistInstance.whitelist)
+	log.Info().Msgf("Blacklist", whitelistInstance.blacklist)
 
 	// start prometheus
 	go func() {
