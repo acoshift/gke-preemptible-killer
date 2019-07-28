@@ -5,21 +5,23 @@
 This small Kubernetes application loop through a given preemptibles node pool and kill a node before the regular [24h
 life time of a preemptible VM](https://cloud.google.com/compute/docs/instances/preemptible#limitations).
 
-[![License](https://img.shields.io/github/license/estafette/estafette-gke-preemptible-killer.svg)](https://github.com/estafette/estafette-gke-preemptible-killer/blob/master/LICENSE)
-
-
-## Why?
+## Why ?
 
 When creating a cluster, all the node are created at the same time and should be deleted after 24h of activity. To
-prevent large disruption, the estafette-gke-preemptible-killer can be used to kill instances during a random period
-of time between 12 and 24h. It makes use of the node annotation to store the time to kill value.
+prevent large disruption, the gke-preemptible-killer can be used to kill instances during a random period
+of time before 24h. It makes use of the node annotation to store the time to kill value.
 
+## Why Fork ?
+
+To rewrite whitelist hours logic.
+
+![cal](./images/cal.jpeg)
 
 ## How does that work
 
 At a given interval, the application get the list of preemptible nodes and check weither the node should be
 deleted or not. If the annotation doesn't exist, a time to kill value is added to the node annotation with a
-random range between 12h and 24h based on the node creation time stamp.
+random range between whitelist hours based on the node creation time stamp.
 When the time to kill time is passed, the Kubernetes node is marked as unschedulable, drained and the instance
 deleted on GCloud.
 
@@ -40,7 +42,7 @@ You can either use environment variables or flags to configure the following set
 
 ### Create a Google Service Account
 
-In order to have the estafette-gke-preemptible-killer instance delete nodes,
+In order to have the gke-preemptible-killer instance delete nodes,
 create a service account and give the _compute.instances.delete_ permissions.
 
 You can either create the service account and associate the role using the
