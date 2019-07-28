@@ -1,7 +1,6 @@
 package main
 
 import (
-	"math/rand"
 	"testing"
 	"time"
 
@@ -73,7 +72,6 @@ func TestGetDesiredNodeState(t *testing.T) {
 
 	creationTimestamp := time.Date(2017, 11, 11, 12, 00, 00, 0, time.UTC)
 	creationTimestampUnix := creationTimestamp.Unix()
-	creationTimestamp12HoursLater := creationTimestamp.Add(12 * time.Hour)
 	creationTimestamp24HoursLater := creationTimestamp.Add(24 * time.Hour)
 
 	node := &apiv1.Node{
@@ -85,17 +83,10 @@ func TestGetDesiredNodeState(t *testing.T) {
 
 	client := FakeNewKubernetesClient()
 
-	whitelistInstance.parseArguments()
 	state, _ := getDesiredNodeState(client, node)
 	stateTS, _ := time.Parse(time.RFC3339, state.ExpiryDatetime)
 
-	if !creationTimestamp12HoursLater.Before(stateTS) && !creationTimestamp24HoursLater.After(stateTS) {
-		t.Errorf("Expect expiry date time to be between 12 and 24h after the creation date %s, instead got %s", creationTimestamp, state.ExpiryDatetime)
-	}
-
-	randomEstafette = rand.New(rand.NewSource(0))
-	stateWithPreseed, _ := getDesiredNodeState(client, node)
-	if stateWithPreseed.ExpiryDatetime != "2017-11-12T11:27:54Z" {
-		t.Errorf("Expect expiry date time to be 2017-11-12T11:27:54Z, instead got %s", stateWithPreseed.ExpiryDatetime)
+	if !creationTimestamp24HoursLater.After(stateTS) {
+		t.Errorf("Expect expiry date time to before 24h after the creation date %s, instead got %s", creationTimestamp, state.ExpiryDatetime)
 	}
 }

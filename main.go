@@ -89,14 +89,14 @@ func init() {
 
 	whitelistInstance.blacklist = *blacklist
 	whitelistInstance.whitelist = *whitelist
+
+	time.Local = time.UTC
 }
 
 func main() {
 	kingpin.Parse()
 
 	initializeLogger()
-
-	whitelistInstance.parseArguments()
 
 	kubernetes, err := NewKubernetesClient(os.Getenv("KUBERNETES_SERVICE_HOST"), os.Getenv("KUBERNETES_SERVICE_PORT"),
 		os.Getenv("KUBERNETES_NAMESPACE"), *kubeConfigPath)
@@ -211,11 +211,8 @@ func getCurrentNodeState(node *apiv1.Node) (state GKEPreemptibleKillerState) {
 func getDesiredNodeState(k KubernetesClient, node *apiv1.Node) (state GKEPreemptibleKillerState, err error) {
 	t := time.Unix(*node.Metadata.CreationTimestamp.Seconds, 0).UTC()
 	drainTimeoutTime := time.Duration(*drainTimeout) * time.Second
-	// 43200 = 12h * 60m * 60s
-	randomTimeBetween0to12 := time.Duration(randomEstafette.Intn((43200)-*drainTimeout)) * time.Second
-	timeToBeAdded := 12*time.Hour + drainTimeoutTime + randomTimeBetween0to12
 
-	expiryDatetime := whitelistInstance.getExpiryDate(t, timeToBeAdded)
+	expiryDatetime := whitelistInstance.getExpiryDate(t, drainTimeoutTime)
 	state.ExpiryDatetime = expiryDatetime.Format(time.RFC3339)
 
 	log.Info().

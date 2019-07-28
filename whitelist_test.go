@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"testing"
 	"time"
+
+	"github.com/google/go-intervals/timespanset"
 )
 
 // Test data
@@ -34,47 +36,49 @@ func init() {
 
 func TestMergeTimespans(t *testing.T) {
 	var i WhitelistInstance
-	i.initialize()
+
+	s := timespanset.Empty()
+	var cnt secondCounter
 
 	// Check that basic scenario works.
-	i.mergeTimespans(a, b, "+")
-	i.whitelistHours.IntervalsBetween(a, c, i.updateWhitelistSecondCount)
-	if i.whitelistSecondCount != 3600 {
-		t.Errorf("Expected 3600 seconds, got '%v'", i.whitelistSecondCount)
+	i.mergeTimespans(s, a, b, "+")
+	s.IntervalsBetween(a, c, cnt.count)
+	if cnt.s != 3600 {
+		t.Errorf("Expected 3600 seconds, got '%v'", cnt.s)
 	}
-	i.whitelistSecondCount = 0
+	cnt.s = 0
 
 	// Check that merging a multi-day interval works.
-	i.mergeTimespans(b, c, "+")
-	i.whitelistHours.IntervalsBetween(a, c, i.updateWhitelistSecondCount)
-	if i.whitelistSecondCount != 10814640 {
-		t.Errorf("Expected 10814640 seconds, got '%v'", i.whitelistSecondCount)
+	i.mergeTimespans(s, b, c, "+")
+	s.IntervalsBetween(a, c, cnt.count)
+	if cnt.s != 10814640 {
+		t.Errorf("Expected 10814640 seconds, got '%v'", cnt.s)
 	}
-	i.whitelistSecondCount = 0
+	cnt.s = 0
 
 	// Check that merging a zero interval with + doesn't change second count.
-	i.mergeTimespans(a, a, "+")
-	i.whitelistHours.IntervalsBetween(a, c, i.updateWhitelistSecondCount)
-	if i.whitelistSecondCount != 10814640 {
-		t.Errorf("Expected 10814640 seconds, got '%v'", i.whitelistSecondCount)
+	i.mergeTimespans(s, a, a, "+")
+	s.IntervalsBetween(a, c, cnt.count)
+	if cnt.s != 10814640 {
+		t.Errorf("Expected 10814640 seconds, got '%v'", cnt.s)
 	}
-	i.whitelistSecondCount = 0
+	cnt.s = 0
 
 	// Check that merging a zero interval with - doesn't change second count.
-	i.mergeTimespans(a, a, "-")
-	i.whitelistHours.IntervalsBetween(a, c, i.updateWhitelistSecondCount)
-	if i.whitelistSecondCount != 10814640 {
-		t.Errorf("Expected 10814640 seconds, got '%v'", i.whitelistSecondCount)
+	i.mergeTimespans(s, a, a, "-")
+	s.IntervalsBetween(a, c, cnt.count)
+	if cnt.s != 10814640 {
+		t.Errorf("Expected 10814640 seconds, got '%v'", cnt.s)
 	}
-	i.whitelistSecondCount = 0
+	cnt.s = 0
 
 	// Check that merging an interval with - works.
-	i.mergeTimespans(b, c, "-")
-	i.whitelistHours.IntervalsBetween(a, c, i.updateWhitelistSecondCount)
-	if i.whitelistSecondCount != 3600 {
-		t.Errorf("Expected 3600 seconds, got '%v'", i.whitelistSecondCount)
+	i.mergeTimespans(s, b, c, "-")
+	s.IntervalsBetween(a, c, cnt.count)
+	if cnt.s != 3600 {
+		t.Errorf("Expected 3600 seconds, got '%v'", cnt.s)
 	}
-	i.whitelistSecondCount = 0
+	cnt.s = 0
 
 	// Check that merging with a wrong direction panics.
 	defer func() {
@@ -82,52 +86,14 @@ func TestMergeTimespans(t *testing.T) {
 			t.Errorf("Expected panic on mergeTimespans(*)")
 		}
 	}()
-	i.mergeTimespans(a, b, "*")
+	i.mergeTimespans(s, a, b, "*")
 }
 
-func TestProcessHours(t *testing.T) {
-	var i WhitelistInstance
-	i.initialize()
-
-	// Check that argument parsing works.
-	i.whitelist = "00:00 - 04:00, 08:00 - 12:00, 16:00 - 20:00"
-	i.blacklist = "01:00 - 02:00, 06:00 - 14:00, 15:00 - 17:00"
-	i.parseArguments()
-	if i.whitelistSecondCount != 21600 {
-		t.Errorf("Expected 21600 seconds, got '%v'", i.whitelistSecondCount)
-	}
+type secondCounter struct {
+	s int64
 }
 
-func TestUpdateWhitelistSecondCount(t *testing.T) {
-	var i WhitelistInstance
-	i.initialize()
-
-	// Check that basic scenario works.
-	i.updateWhitelistSecondCount(a, b)
-	if i.whitelistSecondCount != 3600 {
-		t.Errorf("Expected 3600 seconds, got '%v'", i.whitelistSecondCount)
-	}
-	i.whitelistSecondCount = 0
-
-	// Check that adding a multi-day interval works.
-	i.updateWhitelistSecondCount(b, c)
-	if i.whitelistSecondCount != 10811040 {
-		t.Errorf("Expected 10811040 seconds, got '%v'", i.whitelistSecondCount)
-	}
-	i.whitelistSecondCount = 0
-
-	// Check that adding a zero interval doesn't change second count.
-	i.updateWhitelistSecondCount(a, a)
-	if i.whitelistSecondCount != 0 {
-		t.Errorf("Expected 0 seconds, got '%v'", i.whitelistSecondCount)
-	}
-	i.whitelistSecondCount = 0
-
-	// Check that adding a reverse interval panics.
-	defer func() {
-		if r := recover(); r == nil {
-			t.Errorf("Expected panic when adding '%v - %v'", b, a)
-		}
-	}()
-	i.updateWhitelistSecondCount(b, a)
+func (c *secondCounter) count(start, end time.Time) bool {
+	c.s += int64(end.Sub(start).Seconds())
+	return true
 }
