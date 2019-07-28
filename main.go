@@ -21,7 +21,7 @@ import (
 
 const (
 	// annotationGKEPreemptibleKillerState is the key of the annotation to use to store the expiry datetime
-	annotationGKEPreemptibleKillerState string = "estafette.io/gke-preemptible-killer-state"
+	annotationGKEPreemptibleKillerState string = "acoshift/gke-preemptible-killer-state"
 )
 
 // GKEPreemptibleKillerState represents the state of gke-preemptible-killer
@@ -79,7 +79,7 @@ var (
 	goVersion = runtime.Version()
 
 	// Various internals
-	randomEstafette   = rand.New(rand.NewSource(time.Now().UnixNano()))
+	random            = rand.New(rand.NewSource(time.Now().UnixNano()))
 	whitelistInstance WhitelistInstance
 )
 
@@ -178,7 +178,7 @@ func initializeLogger() {
 	// set some default fields added to all logs
 	log.Logger = zerolog.New(os.Stdout).With().
 		Timestamp().
-		Str("app", "estafette-gke-preemptible-killer").
+		Str("app", "gke-preemptible-killer").
 		Str("version", version).
 		Logger()
 
@@ -192,7 +192,7 @@ func initializeLogger() {
 		Str("revision", revision).
 		Str("buildDate", buildDate).
 		Str("goVersion", goVersion).
-		Msg("Starting estafette-gke-preemptible-killer...")
+		Msg("Starting gke-preemptible-killer...")
 }
 
 // getCurrentNodeState return the state of the node by reading its metadata annotations

@@ -51,7 +51,7 @@ func (w *WhitelistInstance) getExpiryDate(t time.Time, drainTimeout time.Duratio
 	})
 
 	interval := int(bestEnd.Add(-drainTimeout).Sub(bestStart))
-	randomInterval := time.Duration(randomEstafette.Intn(interval))
+	randomInterval := time.Duration(random.Intn(interval))
 	log.Println(randomInterval)
 	return t.Add(bestStart.Sub(t)).Add(randomInterval)
 }

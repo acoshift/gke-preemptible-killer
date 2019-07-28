@@ -1,4 +1,6 @@
-# estafette-gke-preemptible-killer
+# gke-preemptible-killer
+
+> Fork from estafette/estafette-gke-preemptible-killer
 
 This small Kubernetes application loop through a given preemptibles node pool and kill a node before the regular [24h
 life time of a preemptible VM](https://cloud.google.com/compute/docs/instances/preemptible#limitations).
@@ -62,33 +64,12 @@ $ gcloud iam --project=$project_id service-accounts keys create \
     google_service_account.json
 ```
 
-### Deploy with Helm
+### Deploy
 
 ```bash
-# Prepare Helm/Tiller
-$ kubectl create sa tiller -n kube-system
-$ helm init --service-account tiller
-$ kubectl create clusterrolebinding tiller \
-    --clusterrole=cluster-admin \
-    --serviceaccount=kube-system:tiller
-
-# Install
-$ helm upgrade estafette-gke-preemptible-killer \
-    --namespace estafette \
-    --install \
-    --set rbac.create=true \
-    --set-file googleServiceAccount=./google_service_account.json \
-    ./chart/estafette-gke-preemptible-killer
-```
-
-### Deploy without Helm
-
-```bash
-export NAMESPACE=estafette
-export APP_NAME=estafette-gke-preemptible-killer
-export TEAM_NAME=tooling
-export VERSION=1.1.19
-export GO_PIPELINE_LABEL=1.1.19
+export NAMESPACE=default
+export APP_NAME=gke-preemptible-killer
+export VERSION=latest
 export GOOGLE_SERVICE_ACCOUNT=$(cat google_service_account.json | base64)
 export DRAIN_TIMEOUT=300
 export INTERVAL=600
@@ -98,29 +79,10 @@ export CPU_LIMIT=50m
 export MEMORY_LIMIT=128Mi
 
 # Setup RBAC
-curl https://raw.githubusercontent.com/estafette/estafette-gke-preemptible-killer/master/rbac.yaml | envsubst | kubectl apply -n ${NAMESPACE} -f -
+curl https://raw.githubusercontent.com/acoshift/gke-preemptible-killer/master/rbac.yaml | envsubst | kubectl apply -n ${NAMESPACE} -f -
 
 # Run application
-curl https://raw.githubusercontent.com/estafette/estafette-gke-preemptible-killer/master/kubernetes.yaml | envsubst | kubectl apply -n ${NAMESPACE} -f -
-```
-
-
-
-## Development
-
-To start development run
-
-```bash
-git clone git@github.com:estafette/estafette-ci-api.git
-cd estafette-ci-api
-```
-
-Before committing your changes run
-
-```bash
-go test
-go mod tidy
-go mod vendor
+curl https://raw.githubusercontent.com/acoshift/gke-preemptible-killer/master/kubernetes.yaml | envsubst | kubectl apply -n ${NAMESPACE} -f -
 ```
 
 ### Testing
@@ -132,7 +94,7 @@ In order to test your local changes against an external Kubernetes cluster use t
 kubectl proxy
 
 # in another shell
-go build && ./estafette-gke-preemptible-killer -i 10
+go build && ./gke-preemptible-killer -i 10
 ```
 
 Note: `KUBECONFIG=~/.kube/config` as environment variable can also be used if you don't want to use the `kubectl proxy`

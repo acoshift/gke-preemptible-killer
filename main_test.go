@@ -55,7 +55,7 @@ func TestGetCurrentNodeState(t *testing.T) {
 		Metadata: &metav1.ObjectMeta{
 			Name: k8s.String("node-1"),
 			Annotations: map[string]string{
-				"estafette.io/gke-preemptible-killer-state": "2017-11-11T11:11:11Z",
+				"acoshift/gke-preemptible-killer-state": "2017-11-11T11:11:11Z",
 			},
 		},
 	}
