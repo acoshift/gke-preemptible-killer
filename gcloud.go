@@ -23,14 +23,12 @@ type GCloudClient interface {
 // NewGCloudClient return a GCloud client
 func NewGCloudClient(projectId string, zone string) (gcloud GCloudClient, err error) {
 	client, err := google.DefaultClient(context.Background(), compute.ComputeScope)
-
 	if err != nil {
 		err = fmt.Errorf("Error creating compute client:\n%v", err)
 		return
 	}
 
 	service, err := compute.New(client)
-
 	if err != nil {
 		err = fmt.Errorf("Error creating compute service:\n%v", err)
 		return
@@ -42,7 +40,6 @@ func NewGCloudClient(projectId string, zone string) (gcloud GCloudClient, err er
 		Service:   service,
 		Zone:      zone,
 	}
-
 	return
 }
 

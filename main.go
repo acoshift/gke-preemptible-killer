@@ -291,7 +291,6 @@ func processNode(k KubernetesClient, node *apiv1.Node) (err error) {
 
 		var gcloud GCloudClient
 		gcloud, err = NewGCloudClient(projectID, zone)
-
 		if err != nil {
 			log.Error().
 				Err(err).
@@ -302,7 +301,6 @@ func processNode(k KubernetesClient, node *apiv1.Node) (err error) {
 
 		// drain kubernetes node
 		err = k.DrainNode(*node.Metadata.Name, *drainTimeout)
-
 		if err != nil {
 			log.Error().
 				Err(err).
@@ -313,7 +311,6 @@ func processNode(k KubernetesClient, node *apiv1.Node) (err error) {
 
 		// drain kube-dns from kubernetes node
 		err = k.DrainKubeDNSFromNode(*node.Metadata.Name, *drainTimeout)
-
 		if err != nil {
 			log.Error().
 				Err(err).
@@ -324,7 +321,6 @@ func processNode(k KubernetesClient, node *apiv1.Node) (err error) {
 
 		// delete node from kubernetes cluster
 		err = k.DeleteNode(*node.Metadata.Name)
-
 		if err != nil {
 			log.Error().
 				Err(err).
@@ -333,14 +329,19 @@ func processNode(k KubernetesClient, node *apiv1.Node) (err error) {
 			return
 		}
 
-		// delete gcloud instance
-		err = gcloud.DeleteNode(*node.Metadata.Name)
-
+		// try delete gcloud instance
+		for i := 0; i < 3; i++ {
+			err = gcloud.DeleteNode(*node.Metadata.Name)
+			if err != nil {
+				log.Error().
+					Err(err).
+					Str("host", *node.Metadata.Name).
+					Msg("Error deleting GCloud instance, try again in 5 seconds...")
+				return
+			}
+			time.Sleep(5 * time.Second)
+		}
 		if err != nil {
-			log.Error().
-				Err(err).
-				Str("host", *node.Metadata.Name).
-				Msg("Error deleting GCloud instance")
 			return
 		}
 
