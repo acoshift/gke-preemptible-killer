@@ -225,9 +225,8 @@ func getDesiredNodeState(k KubernetesClient, node *apiv1.Node) (state GKEPreempt
 		log.Warn().
 			Err(err).
 			Str("host", *node.Metadata.Name).
-			Msg("Error updating node metadata, continuing with node CreationTimestamp value instead")
+			Msg("Error updating node metadata")
 
-		state.ExpiryDatetime = t.Format(time.RFC3339)
 		nodeTotals.With(prometheus.Labels{"status": "failed"}).Inc()
 
 		return
