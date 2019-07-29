@@ -338,7 +338,6 @@ func processNode(k KubernetesClient, node *apiv1.Node) (err error) {
 					Err(err).
 					Str("host", *node.Metadata.Name).
 					Msg("Error deleting GCloud instance, try again in 5 seconds...")
-				return
 			}
 			time.Sleep(5 * time.Second)
 		}
