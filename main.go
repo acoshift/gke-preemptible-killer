@@ -213,7 +213,7 @@ func getDesiredNodeState(k KubernetesClient, node *apiv1.Node) (state GKEPreempt
 	t := time.Unix(*node.Metadata.CreationTimestamp.Seconds, 0).UTC()
 	drainTimeoutTime := time.Duration(*drainTimeout) * time.Second
 
-	expiryDatetime := whitelistInstance.getExpiryDate(t, drainTimeoutTime)
+	expiryDatetime := whitelistInstance.getExpiryDate(t, 24*time.Hour-drainTimeoutTime)
 	state.ExpiryDatetime = expiryDatetime.Format(time.RFC3339)
 
 	log.Info().

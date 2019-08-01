@@ -38,12 +38,12 @@ func (w *WhitelistInstance) parseArguments(t time.Time) *timespanset.Set {
 }
 
 // getExpiryDate calculates the expiry date of a node.
-func (w *WhitelistInstance) getExpiryDate(t time.Time, drainTimeout time.Duration) (expiryDatetime time.Time) {
+func (w *WhitelistInstance) getExpiryDate(t time.Time, ttl time.Duration) (expiryDatetime time.Time) {
 	s := w.parseArguments(t)
 
 	// find best range
 	var bestStart, bestEnd time.Time
-	s.IntervalsBetween(t, t.Add(24*time.Hour), func(start, end time.Time) bool {
+	s.IntervalsBetween(t, t.Add(ttl), func(start, end time.Time) bool {
 		if start.After(bestStart) {
 			bestStart = start
 			bestEnd = end
@@ -51,7 +51,7 @@ func (w *WhitelistInstance) getExpiryDate(t time.Time, drainTimeout time.Duratio
 		return true
 	})
 
-	interval := int(bestEnd.Add(-drainTimeout).Sub(bestStart))
+	interval := int(bestEnd.Sub(bestStart))
 	randomInterval := time.Duration(random.Intn(interval))
 	return bestStart.Add(randomInterval)
 }
