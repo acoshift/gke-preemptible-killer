@@ -56,6 +56,10 @@ var (
 				Envar("METRICS_PATH").
 				Default("/metrics").
 				String()
+	ttl = kingpin.Flag("ttl", "Node time-to-live in second after create.").
+		Envar("TTL").
+		Default("86400").
+		Int()
 	whitelist = kingpin.Flag("whitelist-hours", "List of UTC time intervals in the form of `09:00 - 12:00, 13:00 - 18:00` in which deletion is allowed and preferred").
 			Envar("WHITELIST_HOURS").
 			Default("").
@@ -105,6 +109,10 @@ func main() {
 	whitelistInstance.blacklist = *blacklist
 	log.Info().Msgf("Whitelist", whitelistInstance.whitelist)
 	log.Info().Msgf("Blacklist", whitelistInstance.blacklist)
+
+	if *ttl <= 0 {
+		*ttl = 86400
+	}
 
 	// start prometheus
 	go func() {
@@ -212,8 +220,9 @@ func getCurrentNodeState(node *apiv1.Node) (state GKEPreemptibleKillerState) {
 func getDesiredNodeState(k KubernetesClient, node *apiv1.Node) (state GKEPreemptibleKillerState, err error) {
 	t := time.Unix(*node.Metadata.CreationTimestamp.Seconds, 0).UTC()
 	drainTimeoutTime := time.Duration(*drainTimeout) * time.Second
+	ttlTime := time.Duration(*ttl) * time.Second
 
-	expiryDatetime := whitelistInstance.getExpiryDate(t, 24*time.Hour-drainTimeoutTime)
+	expiryDatetime := whitelistInstance.getExpiryDate(t, ttlTime-drainTimeoutTime)
 	state.ExpiryDatetime = expiryDatetime.Format(time.RFC3339)
 
 	log.Info().
