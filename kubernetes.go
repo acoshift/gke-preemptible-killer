@@ -32,6 +32,10 @@ type KubernetesClient interface {
 
 // NewKubernetesClient return a Kubernetes client
 func NewKubernetesClient(host string, port string, namespace string, kubeConfigPath string) (kubernetes KubernetesClient, err error) {
+	if namespace == "" {
+		namespace = "default"
+	}
+
 	var k8sClient *k8s.Client
 
 	if len(host) > 0 && len(port) > 0 {
@@ -49,16 +53,13 @@ func NewKubernetesClient(host string, port string, namespace string, kubeConfigP
 			return
 		}
 	} else {
-		if namespace == "" {
-			namespace = "default"
-		}
-
 		k8sClient = &k8s.Client{
-			Endpoint:  "http://127.0.0.1:8001",
-			Namespace: namespace,
-			Client:    &http.Client{},
+			Endpoint: "http://127.0.0.1:8001",
+			Client:   &http.Client{},
 		}
 	}
+
+	k8sClient.Namespace = namespace
 
 	kubernetes = &Kubernetes{
 		Client: k8sClient,

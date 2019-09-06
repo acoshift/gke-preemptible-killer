@@ -141,7 +141,6 @@ func main() {
 			sleepTime := ApplyJitter(*interval)
 
 			nodes, err := kubernetes.GetPreemptibleNodes()
-
 			if err != nil {
 				log.Error().Err(err).Msg("Error while getting the list of preemptible nodes")
 				log.Info().Msgf("Sleeping for %v seconds...", sleepTime)
