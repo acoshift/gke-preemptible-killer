@@ -19,7 +19,7 @@ type Kubernetes struct {
 }
 
 type KubernetesClient interface {
-	DrainNode(string, int) error
+	DrainNode(string, int, time.Duration) error
 	DrainKubeDNSFromNode(string, int) error
 	GetNode(string) (*apiv1.Node, error)
 	DeleteNode(string) error
@@ -159,7 +159,7 @@ func filterOutPodByNode(podList []*apiv1.Pod, nodeName string) (output []*apiv1.
 
 // DrainNode delete every pods from a given node and wait that all pods are removed before it succeed
 // it also make sure we don't select DaemonSet because they are not subject to unschedulable state
-func (k *Kubernetes) DrainNode(name string, drainTimeout int) (err error) {
+func (k *Kubernetes) DrainNode(name string, drainTimeout int, waitEachDeletion time.Duration) (err error) {
 	// Select all pods sitting on the node except the one from kube-system
 	fieldSelector := k8s.QueryParam("fieldSelector", "spec.nodeName="+name+",metadata.namespace!=kube-system")
 	podList, err := k.Client.CoreV1().ListPods(context.Background(), k8s.AllNamespaces, fieldSelector)
@@ -178,10 +178,9 @@ func (k *Kubernetes) DrainNode(name string, drainTimeout int) (err error) {
 	for _, pod := range filteredPodList {
 		log.Info().
 			Str("host", name).
-			Msgf("Deleting pod %s", *pod.Metadata.Name)
+			Msgf("Deleting pod %s and wait %s...", *pod.Metadata.Name, waitEachDeletion)
 
 		err = k.Client.CoreV1().DeletePod(context.Background(), *pod.Metadata.Name, *pod.Metadata.Namespace)
-
 		if err != nil {
 			log.Error().
 				Err(err).
@@ -189,6 +188,8 @@ func (k *Kubernetes) DrainNode(name string, drainTimeout int) (err error) {
 				Msgf("Error draining pod %s", *pod.Metadata.Name)
 			continue
 		}
+
+		time.Sleep(waitEachDeletion)
 	}
 
 	doneDraining := make(chan bool)

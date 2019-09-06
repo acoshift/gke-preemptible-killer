@@ -107,8 +107,8 @@ func main() {
 
 	whitelistInstance.whitelist = *whitelist
 	whitelistInstance.blacklist = *blacklist
-	log.Info().Msgf("Whitelist", whitelistInstance.whitelist)
-	log.Info().Msgf("Blacklist", whitelistInstance.blacklist)
+	log.Info().Msgf("Whitelist %v", whitelistInstance.whitelist)
+	log.Info().Msgf("Blacklist %v", whitelistInstance.blacklist)
 
 	if *ttl <= 0 {
 		*ttl = 86400
@@ -310,7 +310,7 @@ func processNode(k KubernetesClient, node *apiv1.Node) (err error) {
 		}
 
 		// drain kubernetes node
-		err = k.DrainNode(*node.Metadata.Name, *drainTimeout)
+		err = k.DrainNode(*node.Metadata.Name, *drainTimeout, 5*time.Second)
 		if err != nil {
 			log.Error().
 				Err(err).

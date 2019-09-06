@@ -52,7 +52,10 @@ func (w *WhitelistInstance) getExpiryDate(t time.Time, ttl time.Duration) (expir
 	})
 
 	interval := int(bestEnd.Sub(bestStart))
-	randomInterval := time.Duration(random.Intn(interval))
+	var randomInterval time.Duration
+	if interval > 0 {
+		randomInterval = time.Duration(random.Intn(interval))
+	}
 	return bestStart.Add(randomInterval)
 }
 

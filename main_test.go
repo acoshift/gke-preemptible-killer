@@ -21,7 +21,7 @@ func (k *FakeKubernetes) GetProjectIdAndZoneFromNode(name string) (string, strin
 	return "", "", nil
 }
 
-func (k *FakeKubernetes) DrainNode(node string, drainTimeout int) error {
+func (k *FakeKubernetes) DrainNode(node string, drainTimeout int, waitEachDeletion time.Duration) error {
 	return nil
 }
 
