@@ -11,7 +11,7 @@ require (
 	github.com/alecthomas/template v0.0.0-20160405071501-a0175ee3bccc // indirect
 	github.com/alecthomas/units v0.0.0-20151022065526-2efee857e7cf // indirect
 	github.com/beorn7/perks v0.0.0-20160804104726-4c0e84591b9a // indirect
-	github.com/ericchiang/k8s v0.0.0-20170725150632-85c31b99a193
+	github.com/ericchiang/k8s v1.2.0
 	github.com/ghodss/yaml v1.0.0
 	github.com/golang/protobuf v0.0.0-20170808021621-1909bc2f63dc // indirect
 	github.com/google/go-intervals v0.0.0-20171120085516-250c62ad245e

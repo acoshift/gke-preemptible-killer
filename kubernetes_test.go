@@ -4,12 +4,12 @@ import (
 	"testing"
 
 	"github.com/ericchiang/k8s"
-	apiv1 "github.com/ericchiang/k8s/api/v1"
+	corev1 "github.com/ericchiang/k8s/apis/core/v1"
 	metav1 "github.com/ericchiang/k8s/apis/meta/v1"
 )
 
 func TestFilterOutPodByOwnerReferenceKind(t *testing.T) {
-	podList := []*apiv1.Pod{
+	podList := []*corev1.Pod{
 		{
 			Metadata: &metav1.ObjectMeta{
 				Name: k8s.String("node-1"),

@@ -12,7 +12,7 @@ import (
 	"time"
 
 	"github.com/alecthomas/kingpin"
-	apiv1 "github.com/ericchiang/k8s/api/v1"
+	corev1 "github.com/ericchiang/k8s/apis/core/v1"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/rs/zerolog"
@@ -205,7 +205,7 @@ func initializeLogger() {
 }
 
 // getCurrentNodeState return the state of the node by reading its metadata annotations
-func getCurrentNodeState(node *apiv1.Node) (state GKEPreemptibleKillerState) {
+func getCurrentNodeState(node *corev1.Node) (state GKEPreemptibleKillerState) {
 	var ok bool
 
 	state.ExpiryDatetime, ok = node.Metadata.Annotations[annotationGKEPreemptibleKillerState]
@@ -217,7 +217,7 @@ func getCurrentNodeState(node *apiv1.Node) (state GKEPreemptibleKillerState) {
 }
 
 // getDesiredNodeState define the state of the node, update node annotations if not present
-func getDesiredNodeState(k KubernetesClient, node *apiv1.Node) (state GKEPreemptibleKillerState, err error) {
+func getDesiredNodeState(k KubernetesClient, node *corev1.Node) (state GKEPreemptibleKillerState, err error) {
 	t := time.Unix(*node.Metadata.CreationTimestamp.Seconds, 0).UTC()
 	drainTimeoutTime := time.Duration(*drainTimeout) * time.Second
 	ttlTime := time.Duration(*ttl) * time.Second
@@ -248,7 +248,7 @@ func getDesiredNodeState(k KubernetesClient, node *apiv1.Node) (state GKEPreempt
 }
 
 // processNode returns the time to delete a node after n minutes
-func processNode(k KubernetesClient, node *apiv1.Node) (err error) {
+func processNode(k KubernetesClient, node *corev1.Node) (err error) {
 	// get current node state
 	state := getCurrentNodeState(node)
 

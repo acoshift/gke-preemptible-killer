@@ -5,7 +5,7 @@ import (
 	"time"
 
 	"github.com/ericchiang/k8s"
-	apiv1 "github.com/ericchiang/k8s/api/v1"
+	corev1 "github.com/ericchiang/k8s/apis/core/v1"
 	metav1 "github.com/ericchiang/k8s/apis/meta/v1"
 	"github.com/rs/zerolog"
 )
@@ -29,8 +29,8 @@ func (k *FakeKubernetes) DrainKubeDNSFromNode(node string, drainTimeout int) err
 	return nil
 }
 
-func (k *FakeKubernetes) GetNode(name string) (*apiv1.Node, error) {
-	return &apiv1.Node{}, nil
+func (k *FakeKubernetes) GetNode(name string) (*corev1.Node, error) {
+	return &corev1.Node{}, nil
 }
 
 func (k *FakeKubernetes) DeleteNode(name string) error {
@@ -44,14 +44,14 @@ func (k *FakeKubernetes) SetUnschedulableState(name string, unschedulable bool) 
 	return nil
 }
 
-func (k *FakeKubernetes) GetPreemptibleNodes() (*apiv1.NodeList, error) {
-	return &apiv1.NodeList{}, nil
+func (k *FakeKubernetes) GetPreemptibleNodes() (*corev1.NodeList, error) {
+	return &corev1.NodeList{}, nil
 }
 
 func TestGetCurrentNodeState(t *testing.T) {
 	zerolog.SetGlobalLevel(zerolog.Disabled)
 
-	node := &apiv1.Node{
+	node := &corev1.Node{
 		Metadata: &metav1.ObjectMeta{
 			Name: k8s.String("node-1"),
 			Annotations: map[string]string{
@@ -74,7 +74,7 @@ func TestGetDesiredNodeState(t *testing.T) {
 	creationTimestampUnix := creationTimestamp.Unix()
 	creationTimestamp24HoursLater := creationTimestamp.Add(24 * time.Hour)
 
-	node := &apiv1.Node{
+	node := &corev1.Node{
 		Metadata: &metav1.ObjectMeta{
 			Name:              k8s.String("node-1"),
 			CreationTimestamp: &metav1.Time{Seconds: &creationTimestampUnix},
