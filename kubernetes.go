@@ -89,7 +89,7 @@ func (k *Kubernetes) GetPreemptibleNodes() (*corev1.NodeList, error) {
 	labels.Eq("cloud.google.com/gke-preemptible", "true")
 
 	var nodes corev1.NodeList
-	err := k.Client.List(context.Background(), k.Client.Namespace, &nodes, labels.Selector())
+	err := k.Client.List(context.Background(), "", &nodes, labels.Selector())
 	if err != nil {
 		return nil, err
 	}
@@ -99,7 +99,7 @@ func (k *Kubernetes) GetPreemptibleNodes() (*corev1.NodeList, error) {
 // GetNode return the node object from given name
 func (k *Kubernetes) GetNode(name string) (*corev1.Node, error) {
 	var node corev1.Node
-	err := k.Client.Get(context.Background(), k.Client.Namespace, name, &node)
+	err := k.Client.Get(context.Background(), "", name, &node)
 	if err != nil {
 		return nil, err
 	}
@@ -109,8 +109,7 @@ func (k *Kubernetes) GetNode(name string) (*corev1.Node, error) {
 func (k *Kubernetes) DeleteNode(name string) error {
 	return k.Client.Delete(context.Background(), &corev1.Node{
 		Metadata: &metav1.ObjectMeta{
-			Name:      k8s.String(name),
-			Namespace: k8s.String(k.Client.Namespace),
+			Name: k8s.String(name),
 		},
 	})
 }
