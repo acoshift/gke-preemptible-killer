@@ -20,14 +20,14 @@ type Kubernetes struct {
 }
 
 type KubernetesClient interface {
-	DrainNode(string, int, time.Duration) error
-	DrainKubeDNSFromNode(string, int) error
-	GetNode(string) (*corev1.Node, error)
-	DeleteNode(string) error
-	GetPreemptibleNodes() (*corev1.NodeList, error)
-	GetProjectIdAndZoneFromNode(string) (string, string, error)
-	SetNodeAnnotation(string, string, string) error
-	SetUnschedulableState(string, bool) error
+	DrainNode(context.Context, string, int, time.Duration) error
+	DrainKubeDNSFromNode(context.Context, string, int) error
+	GetNode(context.Context, string) (*corev1.Node, error)
+	DeleteNode(context.Context, string) error
+	GetPreemptibleNodes(context.Context) (*corev1.NodeList, error)
+	GetProjectIdAndZoneFromNode(context.Context, string) (string, string, error)
+	SetNodeAnnotation(context.Context, string, string, string) error
+	SetUnschedulableState(context.Context, string, bool) error
 }
 
 // NewKubernetesClient return a Kubernetes client
@@ -69,8 +69,8 @@ func NewKubernetesClient(host string, port string, namespace string, kubeConfigP
 
 // GetProjectIdAndZoneFromNode returns project id and zone from given node name
 // by getting informations from node spec provider id
-func (k *Kubernetes) GetProjectIdAndZoneFromNode(name string) (projectId string, zone string, err error) {
-	node, err := k.GetNode(name)
+func (k *Kubernetes) GetProjectIdAndZoneFromNode(ctx context.Context, name string) (projectId string, zone string, err error) {
+	node, err := k.GetNode(ctx, name)
 
 	if err != nil {
 		return
@@ -84,12 +84,12 @@ func (k *Kubernetes) GetProjectIdAndZoneFromNode(name string) (projectId string,
 }
 
 // GetPreemptibleNodes return a list of preemptible node
-func (k *Kubernetes) GetPreemptibleNodes() (*corev1.NodeList, error) {
+func (k *Kubernetes) GetPreemptibleNodes(ctx context.Context) (*corev1.NodeList, error) {
 	labels := new(k8s.LabelSelector)
 	labels.Eq("cloud.google.com/gke-preemptible", "true")
 
 	var nodes corev1.NodeList
-	err := k.Client.List(context.Background(), "", &nodes, labels.Selector())
+	err := k.Client.List(ctx, "", &nodes, labels.Selector())
 	if err != nil {
 		return nil, err
 	}
@@ -97,17 +97,17 @@ func (k *Kubernetes) GetPreemptibleNodes() (*corev1.NodeList, error) {
 }
 
 // GetNode return the node object from given name
-func (k *Kubernetes) GetNode(name string) (*corev1.Node, error) {
+func (k *Kubernetes) GetNode(ctx context.Context, name string) (*corev1.Node, error) {
 	var node corev1.Node
-	err := k.Client.Get(context.Background(), "", name, &node)
+	err := k.Client.Get(ctx, "", name, &node)
 	if err != nil {
 		return nil, err
 	}
 	return &node, nil
 }
 
-func (k *Kubernetes) DeleteNode(name string) error {
-	return k.Client.Delete(context.Background(), &corev1.Node{
+func (k *Kubernetes) DeleteNode(ctx context.Context, name string) error {
+	return k.Client.Delete(ctx, &corev1.Node{
 		Metadata: &metav1.ObjectMeta{
 			Name: k8s.String(name),
 		},
@@ -117,25 +117,25 @@ func (k *Kubernetes) DeleteNode(name string) error {
 // SetNodeAnnotation add an annotation (key/value) to a node from a given node name
 // As the nodes are constantly being updated, the k8s client doesn't support patch feature yet and
 // to reduce the chance to hit a failure 409 we fetch the node before update
-func (k *Kubernetes) SetNodeAnnotation(name string, key string, value string) error {
-	node, err := k.GetNode(name)
+func (k *Kubernetes) SetNodeAnnotation(ctx context.Context, name string, key string, value string) error {
+	node, err := k.GetNode(ctx, name)
 	if err != nil {
 		return fmt.Errorf("Error getting node information before setting annotation:\n%w", err)
 	}
 
 	node.Metadata.Annotations[key] = value
-	return k.Client.Update(context.Background(), node)
+	return k.Client.Update(ctx, node)
 }
 
 // SetUnschedulableState set the unschedulable state of a given node name
-func (k *Kubernetes) SetUnschedulableState(name string, unschedulable bool) (err error) {
-	node, err := k.GetNode(name)
+func (k *Kubernetes) SetUnschedulableState(ctx context.Context, name string, unschedulable bool) (err error) {
+	node, err := k.GetNode(ctx, name)
 	if err != nil {
 		return fmt.Errorf("Error getting node information before setting unschedulable state:\n%w", err)
 	}
 
 	node.Spec.Unschedulable = &unschedulable
-	return k.Client.Update(context.Background(), node)
+	return k.Client.Update(ctx, node)
 }
 
 // filterOutPodByOwnerReferenceKind filter out a list of pods by its owner references kind
@@ -164,11 +164,11 @@ func filterOutPodByNode(podList []*corev1.Pod, nodeName string) (output []*corev
 
 // DrainNode delete every pods from a given node and wait that all pods are removed before it succeed
 // it also make sure we don't select DaemonSet because they are not subject to unschedulable state
-func (k *Kubernetes) DrainNode(name string, drainTimeout int, waitEachDeletion time.Duration) error {
+func (k *Kubernetes) DrainNode(ctx context.Context, name string, drainTimeout int, waitEachDeletion time.Duration) error {
 	// Select all pods sitting on the node except the one from kube-system
 	fieldSelector := k8s.QueryParam("fieldSelector", "spec.nodeName="+name+",metadata.namespace!=kube-system")
 	var podList corev1.PodList
-	err := k.Client.List(context.Background(), k8s.AllNamespaces, &podList, fieldSelector)
+	err := k.Client.List(ctx, k8s.AllNamespaces, &podList, fieldSelector)
 	if err != nil {
 		return err
 	}
@@ -185,7 +185,7 @@ func (k *Kubernetes) DrainNode(name string, drainTimeout int, waitEachDeletion t
 			Str("host", name).
 			Msgf("Deleting pod %s and wait %s...", *pod.Metadata.Name, waitEachDeletion)
 
-		err = k.Client.Delete(context.Background(), pod)
+		err = k.Client.Delete(ctx, pod)
 		if err != nil {
 			log.Error().
 				Err(err).
@@ -206,7 +206,7 @@ func (k *Kubernetes) DrainNode(name string, drainTimeout int, waitEachDeletion t
 			sleepDuration := time.Duration(sleepTime) * time.Second
 
 			var pendingPodList corev1.PodList
-			err := k.Client.List(context.Background(), k8s.AllNamespaces, &pendingPodList, fieldSelector)
+			err := k.Client.List(ctx, k8s.AllNamespaces, &pendingPodList, fieldSelector)
 			if err != nil {
 				log.Error().
 					Err(err).
@@ -252,11 +252,11 @@ func (k *Kubernetes) DrainNode(name string, drainTimeout int, waitEachDeletion t
 }
 
 // DrainKubeDNSFromNode deletes any kube-dns pods running on the node
-func (k *Kubernetes) DrainKubeDNSFromNode(name string, drainTimeout int) error {
+func (k *Kubernetes) DrainKubeDNSFromNode(ctx context.Context, name string, drainTimeout int) error {
 	// Select all pods sitting on the node except the one from kube-system
 	labelSelector := k8s.QueryParam("labelSelector", "k8s-app=kube-dns")
 	var podList corev1.PodList
-	err := k.Client.List(context.Background(), "kube-system", &podList, labelSelector)
+	err := k.Client.List(ctx, "kube-system", &podList, labelSelector)
 	if err != nil {
 		return err
 	}
@@ -273,7 +273,7 @@ func (k *Kubernetes) DrainKubeDNSFromNode(name string, drainTimeout int) error {
 			Str("host", name).
 			Msgf("Deleting pod %s", *pod.Metadata.Name)
 
-		err = k.Client.Delete(context.Background(), pod)
+		err = k.Client.Delete(ctx, pod)
 		if err != nil {
 			log.Error().
 				Err(err).
@@ -292,7 +292,7 @@ func (k *Kubernetes) DrainKubeDNSFromNode(name string, drainTimeout int) error {
 			sleepDuration := time.Duration(sleepTime) * time.Second
 
 			var podList corev1.PodList
-			err := k.Client.List(context.Background(), "kube-system", &podList, labelSelector)
+			err := k.Client.List(ctx, "kube-system", &podList, labelSelector)
 			if err != nil {
 				log.Error().
 					Err(err).

@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"testing"
 	"time"
 
@@ -17,34 +18,34 @@ func FakeNewKubernetesClient() KubernetesClient {
 	return &FakeKubernetes{}
 }
 
-func (k *FakeKubernetes) GetProjectIdAndZoneFromNode(name string) (string, string, error) {
+func (k *FakeKubernetes) GetProjectIdAndZoneFromNode(ctx context.Context, name string) (string, string, error) {
 	return "", "", nil
 }
 
-func (k *FakeKubernetes) DrainNode(node string, drainTimeout int, waitEachDeletion time.Duration) error {
+func (k *FakeKubernetes) DrainNode(ctx context.Context, node string, drainTimeout int, waitEachDeletion time.Duration) error {
 	return nil
 }
 
-func (k *FakeKubernetes) DrainKubeDNSFromNode(node string, drainTimeout int) error {
+func (k *FakeKubernetes) DrainKubeDNSFromNode(ctx context.Context, node string, drainTimeout int) error {
 	return nil
 }
 
-func (k *FakeKubernetes) GetNode(name string) (*corev1.Node, error) {
+func (k *FakeKubernetes) GetNode(ctx context.Context, name string) (*corev1.Node, error) {
 	return &corev1.Node{}, nil
 }
 
-func (k *FakeKubernetes) DeleteNode(name string) error {
+func (k *FakeKubernetes) DeleteNode(ctx context.Context, name string) error {
 	return nil
 }
 
-func (k *FakeKubernetes) SetNodeAnnotation(name string, key string, value string) error {
+func (k *FakeKubernetes) SetNodeAnnotation(ctx context.Context, name string, key string, value string) error {
 	return nil
 }
-func (k *FakeKubernetes) SetUnschedulableState(name string, unschedulable bool) error {
+func (k *FakeKubernetes) SetUnschedulableState(ctx context.Context, name string, unschedulable bool) error {
 	return nil
 }
 
-func (k *FakeKubernetes) GetPreemptibleNodes() (*corev1.NodeList, error) {
+func (k *FakeKubernetes) GetPreemptibleNodes(ctx context.Context) (*corev1.NodeList, error) {
 	return &corev1.NodeList{}, nil
 }
 

@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	stdlog "log"
 	"math/rand"
 	"net/http"
@@ -140,7 +141,8 @@ func main() {
 
 			sleepTime := ApplyJitter(*interval)
 
-			nodes, err := kubernetes.GetPreemptibleNodes()
+			ctx := context.Background()
+			nodes, err := kubernetes.GetPreemptibleNodes(ctx)
 
 			if err != nil {
 				log.Error().Err(err).Msg("Error while getting the list of preemptible nodes")
@@ -218,6 +220,7 @@ func getCurrentNodeState(node *corev1.Node) (state GKEPreemptibleKillerState) {
 
 // getDesiredNodeState define the state of the node, update node annotations if not present
 func getDesiredNodeState(k KubernetesClient, node *corev1.Node) (state GKEPreemptibleKillerState, err error) {
+	ctx := context.Background()
 	t := time.Unix(*node.Metadata.CreationTimestamp.Seconds, 0).UTC()
 	drainTimeoutTime := time.Duration(*drainTimeout) * time.Second
 	ttlTime := time.Duration(*ttl) * time.Second
@@ -229,7 +232,7 @@ func getDesiredNodeState(k KubernetesClient, node *corev1.Node) (state GKEPreemp
 		Str("host", *node.Metadata.Name).
 		Msgf("Annotation not found, adding %s to %s", annotationGKEPreemptibleKillerState, state.ExpiryDatetime)
 
-	err = k.SetNodeAnnotation(*node.Metadata.Name, annotationGKEPreemptibleKillerState, state.ExpiryDatetime)
+	err = k.SetNodeAnnotation(ctx, *node.Metadata.Name, annotationGKEPreemptibleKillerState, state.ExpiryDatetime)
 
 	if err != nil {
 		log.Warn().
@@ -249,6 +252,8 @@ func getDesiredNodeState(k KubernetesClient, node *corev1.Node) (state GKEPreemp
 
 // processNode returns the time to delete a node after n minutes
 func processNode(k KubernetesClient, node *corev1.Node) (err error) {
+	ctx := context.Background()
+
 	// get current node state
 	state := getCurrentNodeState(node)
 
@@ -278,7 +283,7 @@ func processNode(k KubernetesClient, node *corev1.Node) (err error) {
 			Msgf("Node expired %.0f minute(s) ago, deleting...", timeDiff)
 
 		// set node unschedulable
-		err = k.SetUnschedulableState(*node.Metadata.Name, true)
+		err = k.SetUnschedulableState(ctx, *node.Metadata.Name, true)
 		if err != nil {
 			log.Error().
 				Err(err).
@@ -289,7 +294,7 @@ func processNode(k KubernetesClient, node *corev1.Node) (err error) {
 
 		var projectID string
 		var zone string
-		projectID, zone, err = k.GetProjectIdAndZoneFromNode(*node.Metadata.Name)
+		projectID, zone, err = k.GetProjectIdAndZoneFromNode(ctx, *node.Metadata.Name)
 
 		if err != nil {
 			log.Error().
@@ -310,7 +315,7 @@ func processNode(k KubernetesClient, node *corev1.Node) (err error) {
 		}
 
 		// drain kubernetes node
-		err = k.DrainNode(*node.Metadata.Name, *drainTimeout, 5*time.Second)
+		err = k.DrainNode(ctx, *node.Metadata.Name, *drainTimeout, 5*time.Second)
 		if err != nil {
 			log.Error().
 				Err(err).
@@ -320,7 +325,7 @@ func processNode(k KubernetesClient, node *corev1.Node) (err error) {
 		}
 
 		// drain kube-dns from kubernetes node
-		err = k.DrainKubeDNSFromNode(*node.Metadata.Name, *drainTimeout)
+		err = k.DrainKubeDNSFromNode(ctx, *node.Metadata.Name, *drainTimeout)
 		if err != nil {
 			log.Error().
 				Err(err).
@@ -330,7 +335,7 @@ func processNode(k KubernetesClient, node *corev1.Node) (err error) {
 		}
 
 		// delete node from kubernetes cluster
-		err = k.DeleteNode(*node.Metadata.Name)
+		err = k.DeleteNode(ctx, *node.Metadata.Name)
 		if err != nil {
 			log.Error().
 				Err(err).
