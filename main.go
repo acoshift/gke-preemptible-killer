@@ -219,8 +219,7 @@ func getCurrentNodeState(node *corev1.Node) (state GKEPreemptibleKillerState) {
 }
 
 // getDesiredNodeState define the state of the node, update node annotations if not present
-func getDesiredNodeState(k KubernetesClient, node *corev1.Node) (state GKEPreemptibleKillerState, err error) {
-	ctx := context.Background()
+func getDesiredNodeState(ctx context.Context, k KubernetesClient, node *corev1.Node) (state GKEPreemptibleKillerState, err error) {
 	t := time.Unix(*node.Metadata.CreationTimestamp.Seconds, 0).UTC()
 	drainTimeoutTime := time.Duration(*drainTimeout) * time.Second
 	ttlTime := time.Duration(*ttl) * time.Second
@@ -259,7 +258,7 @@ func processNode(k KubernetesClient, node *corev1.Node) (err error) {
 
 	// set node state if doesn't already have annotations
 	if state.ExpiryDatetime == "" {
-		state, _ = getDesiredNodeState(k, node)
+		state, _ = getDesiredNodeState(ctx, k, node)
 	}
 
 	// compute time difference

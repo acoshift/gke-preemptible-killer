@@ -84,7 +84,7 @@ func TestGetDesiredNodeState(t *testing.T) {
 
 	client := FakeNewKubernetesClient()
 
-	state, _ := getDesiredNodeState(client, node)
+	state, _ := getDesiredNodeState(context.Background(), client, node)
 	stateTS, _ := time.Parse(time.RFC3339, state.ExpiryDatetime)
 
 	if !creationTimestamp24HoursLater.After(stateTS) {
