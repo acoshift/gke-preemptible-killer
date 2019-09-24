@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"io/ioutil"
+	"math/rand"
 	"net/http"
 	"strings"
 	"time"
@@ -139,7 +140,8 @@ func (k *Kubernetes) SetUnschedulableState(ctx context.Context, name string, uns
 }
 
 // filterOutPodByOwnerReferenceKind filter out a list of pods by its owner references kind
-func filterOutPodByOwnerReferenceKind(podList []*corev1.Pod, kind string) (output []*corev1.Pod) {
+func filterOutPodByOwnerReferenceKind(podList []*corev1.Pod, kind string) []*corev1.Pod {
+	var output []*corev1.Pod
 	for _, pod := range podList {
 		for _, ownerReference := range pod.Metadata.OwnerReferences {
 			if *ownerReference.Kind != kind {
@@ -147,19 +149,24 @@ func filterOutPodByOwnerReferenceKind(podList []*corev1.Pod, kind string) (outpu
 			}
 		}
 	}
-
-	return
+	return output
 }
 
 // filterOutPodByNode filters out a list of pods by its node
-func filterOutPodByNode(podList []*corev1.Pod, nodeName string) (output []*corev1.Pod) {
+func filterOutPodByNode(podList []*corev1.Pod, nodeName string) []*corev1.Pod {
+	var output []*corev1.Pod
 	for _, pod := range podList {
 		if *pod.Spec.NodeName == nodeName {
 			output = append(output, pod)
 		}
 	}
+	return output
+}
 
-	return
+func shufflePods(podList []*corev1.Pod) {
+	rand.Shuffle(len(podList), func(i, j int) {
+		podList[i], podList[j] = podList[j], podList[i]
+	})
 }
 
 // DrainNode delete every pods from a given node and wait that all pods are removed before it succeed
@@ -175,6 +182,7 @@ func (k *Kubernetes) DrainNode(ctx context.Context, name string, drainTimeout in
 
 	// Filter out DaemonSet from the list of pods
 	filteredPodList := filterOutPodByOwnerReferenceKind(podList.Items, "DaemonSet")
+	shufflePods(podList.Items)
 
 	log.Info().
 		Str("host", name).

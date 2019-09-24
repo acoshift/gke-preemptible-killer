@@ -61,11 +61,15 @@ var (
 		Envar("TTL").
 		Default("86400").
 		Int()
-	whitelist = kingpin.Flag("whitelist-hours", "List of UTC time intervals in the form of `09:00 - 12:00, 13:00 - 18:00` in which deletion is allowed and preferred").
+	whitelist = kingpin.Flag("whitelist-hours", "List of UTC time intervals in the form of `09:00 - 12:00, 13:00 - 18:00` in which deletion is allowed and preferred.").
 			Envar("WHITELIST_HOURS").
 			Default("").
 			Short('w').
 			String()
+	waitEachDeletion = kingpin.Flag("wait-each-deletion", "Wait seconds between delete each pod.").
+				Envar("WAIT_EACH_DELETION").
+				Default("0").
+				Int()
 
 	// define prometheus counter
 	nodeTotals = prometheus.NewCounterVec(
@@ -84,7 +88,6 @@ var (
 	goVersion = runtime.Version()
 
 	// Various internals
-	random            = rand.New(rand.NewSource(time.Now().UnixNano()))
 	whitelistInstance WhitelistInstance
 )
 
@@ -93,6 +96,7 @@ func init() {
 	prometheus.MustRegister(nodeTotals)
 
 	time.Local = time.UTC
+	rand.Seed(time.Now().UnixNano())
 }
 
 func main() {
@@ -314,7 +318,7 @@ func processNode(k KubernetesClient, node *corev1.Node) (err error) {
 		}
 
 		// drain kubernetes node
-		err = k.DrainNode(ctx, *node.Metadata.Name, *drainTimeout, 5*time.Second)
+		err = k.DrainNode(ctx, *node.Metadata.Name, *drainTimeout, time.Duration(*waitEachDeletion)*time.Second)
 		if err != nil {
 			log.Error().
 				Err(err).
@@ -344,7 +348,7 @@ func processNode(k KubernetesClient, node *corev1.Node) (err error) {
 		}
 
 		// try delete gcloud instance
-		for i := 0; i < 3; i++ {
+		for i := 0; i < 5; i++ {
 			err = gcloud.DeleteNode(*node.Metadata.Name)
 			if err != nil {
 				log.Error().

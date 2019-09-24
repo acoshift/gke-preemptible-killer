@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"math/rand"
 	"strings"
 	"time"
 
@@ -54,7 +55,7 @@ func (w *WhitelistInstance) getExpiryDate(t time.Time, ttl time.Duration) (expir
 	interval := int(bestEnd.Sub(bestStart))
 	var randomInterval time.Duration
 	if interval > 0 {
-		randomInterval = time.Duration(random.Intn(interval))
+		randomInterval = time.Duration(rand.Intn(interval))
 	}
 	return bestStart.Add(randomInterval)
 }
