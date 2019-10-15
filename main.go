@@ -62,7 +62,7 @@ var (
 		Default("86400").
 		Int()
 	minTTL = kingpin.Flag("min-ttl", "Node minimum time-to-live in second after create.").
-		Envar("TTL").
+		Envar("MIN_TTL").
 		Default("43200").
 		Int()
 	whitelist = kingpin.Flag("whitelist-hours", "List of UTC time intervals in the form of `09:00 - 12:00, 13:00 - 18:00` in which deletion is allowed and preferred.").
