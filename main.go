@@ -61,6 +61,10 @@ var (
 		Envar("TTL").
 		Default("86400").
 		Int()
+	minTTL = kingpin.Flag("min-ttl", "Node minimum time-to-live in second after create.").
+		Envar("TTL").
+		Default("43200").
+		Int()
 	whitelist = kingpin.Flag("whitelist-hours", "List of UTC time intervals in the form of `09:00 - 12:00, 13:00 - 18:00` in which deletion is allowed and preferred.").
 			Envar("WHITELIST_HOURS").
 			Default("").
@@ -117,6 +121,9 @@ func main() {
 
 	if *ttl <= 0 {
 		*ttl = 86400
+	}
+	if *ttl < *minTTL {
+		*minTTL = *ttl * 80 / 100
 	}
 
 	// start prometheus
@@ -227,8 +234,9 @@ func getDesiredNodeState(ctx context.Context, k KubernetesClient, node *corev1.N
 	t := time.Unix(*node.Metadata.CreationTimestamp.Seconds, 0).UTC()
 	drainTimeoutTime := time.Duration(*drainTimeout) * time.Second
 	ttlTime := time.Duration(*ttl) * time.Second
+	minTTLTime := time.Duration(*minTTL) * time.Second
 
-	expiryDatetime := whitelistInstance.getExpiryDate(t, ttlTime-drainTimeoutTime)
+	expiryDatetime := whitelistInstance.getExpiryDate(t.Add(minTTLTime), ttlTime-drainTimeoutTime)
 	state.ExpiryDatetime = expiryDatetime.Format(time.RFC3339)
 
 	log.Info().
