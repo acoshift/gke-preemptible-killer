@@ -236,7 +236,7 @@ func getDesiredNodeState(ctx context.Context, k KubernetesClient, node *corev1.N
 	ttlTime := time.Duration(*ttl) * time.Second
 	minTTLTime := time.Duration(*minTTL) * time.Second
 
-	expiryDatetime := whitelistInstance.getExpiryDate(t.Add(minTTLTime), ttlTime-drainTimeoutTime)
+	expiryDatetime := whitelistInstance.getExpiryDate(t.Add(minTTLTime), ttlTime-drainTimeoutTime-minTTLTime)
 	state.ExpiryDatetime = expiryDatetime.Format(time.RFC3339)
 
 	log.Info().
