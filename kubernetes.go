@@ -182,7 +182,7 @@ func (k *Kubernetes) DrainNode(ctx context.Context, name string, drainTimeout in
 
 	// Filter out DaemonSet from the list of pods
 	filteredPodList := filterOutPodByOwnerReferenceKind(podList.Items, "DaemonSet")
-	shufflePods(podList.Items)
+	shufflePods(filteredPodList)
 
 	log.Info().
 		Str("host", name).
